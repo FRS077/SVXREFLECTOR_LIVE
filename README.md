@@ -134,5 +134,5 @@ Autres points :
 
 ## 8. Licence
 
-**© 2026 Romuald FRS077. Tous droits réservés.**
+**© 2026 Romuald FRS077. Tous droits réservés.** **fra485@orange.fr**
 Ce site, son code source, son design et ses contenus sont protégés. Toute reproduction, distribution ou réutilisation sans autorisation écrite est interdite.
