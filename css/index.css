@@ -387,3 +387,11 @@
 .upd-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--accent-red, #ef4444); margin-left: 8px;
     vertical-align: middle; box-shadow: 0 0 6px var(--accent-red, #ef4444); animation: updBlink 1.2s ease-in-out infinite; cursor: pointer; }
 @keyframes updBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.15; } }
+
+/* Réorganisation des boutons de l'en-tête (include/nav-order.js) */
+.nav-editing > [data-nav-id] { outline: 1px dashed var(--accent-cyan); outline-offset: 2px; cursor: grab; }
+.nav-editing > [data-nav-id].nav-drag { opacity: 0.4; }
+.nav-editing .dd-menu, .nav-editing .dd-panel { display: none !important; }
+.nav-move { display: inline-flex; gap: 2px; margin-left: 6px; }
+.nav-move b { font-size: 0.6rem; line-height: 1; padding: 3px 4px; border-radius: 4px; background: var(--surface-subtle); color: var(--accent-text); cursor: pointer; font-weight: normal; }
+.nav-move b:hover { background: var(--accent-cyan); color: #000; }

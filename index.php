@@ -136,6 +136,9 @@ if (!$isLogged) {
                 <i class="fa-solid fa-sun" id="themeIcon"></i>
                 <span id="themeLabel">Mode clair</span>
             </button>
+            <?php if (NAV_REORDER_ENABLE): ?>
+            <button type="button" class="btn-action" id="navEdit" title="Réorganiser les boutons de l'en-tête"><i class="fa-solid fa-arrows-up-down-left-right"></i></button>
+            <?php endif; ?>
             <a class="btn-logout" href="index.php?action=logout"><i class="fa-solid fa-right-from-bracket"></i> Déconnexion</a>
         </div>
     </header>
@@ -638,15 +641,11 @@ if (!$isLogged) {
             const isOn = main.event === 'TALK_START';
             const who = [info.name, info.node_location || info.location].filter(Boolean).join(' • ');
             const dp = formatDateParts(main.utc_iso, main.datetime);
-            const badge = isOn
-                ? '<span class="tag-event tag-talk-on"><i class="fa-solid fa-microphone"></i> PTT ON</span>'
-                : '<span class="tag-event tag-talk-off"><i class="fa-solid fa-microphone-slash"></i> PTT OFF</span>';
 
             let html = `
                 <div class="lt-main${isOn ? ' is-on' : ''}">
                     <div class="lt-top">
                         <div class="lt-callsign">${esc(main.callsign)}</div>
-                        ${badge}
                     </div>
                     ${who ? `<div class="lt-who">${esc(who)}</div>` : ''}
                     <div class="lt-grid">
@@ -1028,6 +1027,9 @@ if (!$isLogged) {
             setInterval(tick, 1000);
         })();
     </script>
+<?php if (NAV_REORDER_ENABLE): ?>
+    <script src="include/nav-order.js?v=<?= (int)@filemtime(__DIR__ . '/include/nav-order.js') ?>"></script>
+    <?php endif; ?>
 <?php if (UPDATE_CHECK_ENABLE && NEWS_PAGE_ENABLE): ?>
     <script>
         // Nouvelle version sur GitHub ? (vérifiée une fois par jour côté serveur ; point rouge dans le pied de page)

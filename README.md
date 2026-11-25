@@ -166,3 +166,10 @@ La page **Nouveautés** (`include/nouveautes.php`) présente les fonctionnalité
 Une fois par jour, le serveur interroge GitHub (`UPDATE_REPO`) : si une version plus récente existe, un petit point rouge
 clignote dans le pied de page de l'index. Sans Release publiée, c'est le `version.txt` de la branche `main` qui est comparé.
 Pour annoncer une mise à jour : mettre à jour `version.txt`, publier une Release (ex. tag `v1.0.28`) avec ses notes.
+
+## Réorganiser les boutons de l'en-tête
+
+Sur la page principale, le bouton ✥ (à côté de « Déconnexion ») active le mode organisation : les boutons et menus de l'en-tête
+se déplacent par glisser-déposer ou avec les petites flèches ◀ ▶ (écrans tactiles). « Terminé » enregistre, « Réinitialiser »
+rétablit l'ordre d'origine. La date et l'heure, les visiteurs et la météo restent fixes, « Déconnexion » reste toujours en dernier.
+L'ordre est mémorisé dans le navigateur de chaque visiteur. Désactivable avec `NAV_REORDER_ENABLE` (config.php, section 10e).

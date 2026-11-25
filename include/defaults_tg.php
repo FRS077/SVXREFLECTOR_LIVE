@@ -15,6 +15,7 @@ $__d = [
     'TG_SHOW_MONITORED'     => true,
     'TG_SHOW_SELECTED'      => true,
     'TG_NAME_DEFAULT'       => 'TG provisoire',
+    'NAV_REORDER_ENABLE'    => true,
     'NEWS_PAGE_ENABLE'      => true,
     'UPDATE_CHECK_ENABLE'   => true,
     'UPDATE_REPO'           => 'FRS077/SVXREFLECTOR_LIVE',

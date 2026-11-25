@@ -301,6 +301,7 @@ define('WEATHER_REFRESH_MIN',  15);        // rafraîchissement en minutes
 // ============================================================
 // 10e) NOUVEAUTÉS ET MISES À JOUR (include/nouveautes.php)
 // ============================================================
+define('NAV_REORDER_ENABLE',  true);      // bouton ✥ pour réorganiser les boutons de l'en-tête (index.php) ; date, météo et Déconnexion restent fixes
 define('NEWS_PAGE_ENABLE',     true);      // page « Nouveautés » (fonctionnalités + historique des versions) et son bouton
 define('UPDATE_CHECK_ENABLE',  true);      // vérifie une fois par jour sur GitHub s'il existe une nouvelle version (point rouge discret dans le pied de page)
 define('UPDATE_REPO',          'FRS077/SVXREFLECTOR_LIVE'); // dépôt GitHub contrôlé
