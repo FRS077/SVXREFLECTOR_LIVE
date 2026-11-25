@@ -8,6 +8,7 @@
 ini_set('display_errors', 0);
 session_start();
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/defaults_tg.php';
 
 $isLogged = !ENABLE_AUTH || (!empty($_SESSION['authenticated']) && $_SESSION['authenticated'] === true);
 if (!$isLogged) {
@@ -150,7 +151,7 @@ if (!$isLogged) {
     <?php endif; ?>
 
     <footer>
-        <p>Développé par <strong>FRS077 Romuald</strong> pour RNFA<?= dashboard_version_html() ?></p>
+        <?= dashboard_footer_html() ?>
     </footer>
 
     <script>

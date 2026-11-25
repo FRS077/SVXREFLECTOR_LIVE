@@ -112,3 +112,6 @@
         /* Menus déroulants (config.php) */
         /* Image de fond (config.php) */
     
+
+.footer-link { color: inherit; text-decoration: none; border-bottom: 1px dotted currentColor; }
+.footer-link:hover { color: var(--accent-text); }

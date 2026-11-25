@@ -17,12 +17,12 @@
 // ============================================================
 // 1) GÉNÉRAL
 // ============================================================
-define('ENABLE_AUTH',true);              // true = mot de passe requis / false = accès libre
+define('ENABLE_AUTH', true);              // true = mot de passe requis / false = accès libre
 define('AUTH_USER', 'admin');             // identifiant de connexion
 define('AUTH_PASS', 'rnfa*2026');         // mot de passe de connexion
 define('AUTHOR_NAME', 'FRS077 Romuald pour RNFA');
 define('LOG_TIMEZONE', 'Europe/Paris');   // fuseau dans lequel les serveurs écrivent leurs logs
-define('TALK_MAX_SEC', 240);              // limite de parole en secondes (180 = 3 minutes)
+define('TALK_MAX_SEC', 180);              // limite de parole en secondes (180 = 3 minutes)
 
 // ============================================================
 // 2) FICHIERS ET SERVICES
@@ -54,8 +54,8 @@ define('SHOW_VISITORS', true);            // nombre de visiteurs connectés en t
 define('INDEX_SHOW_NAME_COL',  true);      // tableau « Transmissions en Direct » : colonne Prénom
 define('INDEX_SHOW_PLACE_COL', true);      // tableau « Transmissions en Direct » : colonne Département / ville
 define('INDEX_SHOW_DISCONNECTED', true);   // ligne « Dernières déconnexions » sous les stations actives
-define('INDEX_DISCONNECTED_MAX', 20);      // nombre maximum de stations déconnectées affichées
-define('INDEX_DISCONNECTED_HOURS', 0);    // ne montre que les déconnexions des X dernières heures (0 = sans limite)
+define('INDEX_DISCONNECTED_MAX', 10);      // nombre maximum de stations déconnectées affichées
+define('INDEX_DISCONNECTED_HOURS', 12);    // ne montre que les déconnexions des X dernières heures (0 = sans limite)
 define('FACEBOOK_URL', 'https://www.facebook.com/exemple'); // lien Facebook (vide = bouton masqué)
 define('CONTACT_URL', '');                // lien contact : https://… ou mailto:adresse@exemple.fr (vide = bouton masqué)
 define('INDEX_SHOW_ADMIN_LINK', true);  // bouton « Admin » (accès à include/admin.php) dans l'en-tête / false = masqué (la page reste accessible par son adresse)
@@ -243,6 +243,68 @@ function dashboard_menus_html() {
         document.addEventListener("keydown",function(e){if(e.key==="Escape")closeAll(null);});
     })();</script>';
 }
+
+// ============================================================
+// 10b) TALKGROUPES (include/talkgroupe.php), DERNIÈRES CONNEXIONS, LIEN FreeDMR
+// ============================================================
+define('INDEX_SHOW_CONNECTED',  true);     // carte « Dernière station connectée » (avec l'heure) après « Temps de parole du jour »
+define('FREEDMR_URL',   'http://freedmr.fr'); // lien FreeDMR à côté de Mumble (vide = bouton masqué)
+define('FREEDMR_LABEL', 'FreeDMR');        // texte du bouton
+define('TG_PAGE_ENABLE', true);            // true = page Talkgroupes + bouton / false = masquée
+define('TG_LOCAL', 59);                    // TG local du réseau : les stations sur un autre TG sont mises en évidence
+define('TG_REFRESH_SEC', 10);              // rafraîchissement de la page Talkgroupes (secondes)
+define('TG_READ_BYTES', 3000000);          // taille lue en fin de log pour retrouver les TG activés
+define('TG_SHOW_MONITORED', true);         // afficher aussi les stations qui écoutent un TG (sans y être)
+define('TG_SHOW_SELECTED', true);          // afficher les stations qui ont activé ce TG dans le log
+define('TG_NAME_DEFAULT', 'TG provisoire'); // nom affiché pour un TG absent de la liste ci-dessous
+$TG_NAMES = [                              // noms des TG (numéro => nom)
+    59  => 'TG principal',
+    62  => 'TG de dégagement',
+    100 => 'SSTV',
+    101 => 'Packet APRS',
+    102 => 'Test',
+];
+
+// ============================================================
+// 10c) SERVEUR (include/serveur.php) : CPU, température, mémoire, disque, réseau, uptime
+// ============================================================
+define('INDEX_SHOW_SERVER',  true);    // ligne « Serveur » (CPU, température, mémoire, disque, uptime) sur la page principale
+define('SERVER_PAGE_ENABLE', true);    // true = page Serveur + bouton / false = page désactivée
+define('SERVER_SHOW_HOST',   true);    // nom de la machine affiché (false = masqué)
+define('SERVER_SHOW_CPU',    true);    // charge du processeur
+define('SERVER_SHOW_TEMP',   true);    // température (si le matériel la fournit)
+define('SERVER_SHOW_RAM',    true);    // mémoire (et swap)
+define('SERVER_SHOW_DISK',   true);    // espace disque
+define('SERVER_SHOW_NET',    true);    // débit réseau
+define('SERVER_SHOW_UPTIME', true);    // durée depuis le démarrage (jours, heures)
+define('SERVER_SHOW_SYSTEM', true);    // système, noyau, PHP
+define('SERVER_DISK_PATHS',  ['/']);   // disques à surveiller (ex. ['/', '/var/log'])
+define('SERVER_TEMP_WARN',   60);      // °C : orange au-dessus
+define('SERVER_TEMP_CRIT',   75);      // °C : rouge au-dessus
+define('SERVER_PCT_WARN',    75);      // % : orange (CPU, mémoire, disque)
+define('SERVER_PCT_CRIT',    90);      // % : rouge
+define('SERVER_REFRESH_SEC', 3);       // rafraîchissement de la page Serveur en secondes
+
+// ============================================================
+// 10d) MÉTÉO DISCRÈTE (index.php) : température, lever / coucher du soleil, petite icône
+// ============================================================
+define('WEATHER_ENABLE',       true);      // true = petit encart météo dans l'en-tête / false = masqué
+define('WEATHER_ASK_LOCATION', true);      // true = utilise la position du visiteur (le navigateur demande l'autorisation) / false = toujours le lieu par défaut
+define('WEATHER_SHOW_ICON',    true);      // icône soleil / nuage / pluie / neige
+define('WEATHER_SHOW_TEMP',    true);      // température
+define('WEATHER_SHOW_SUN',     true);      // lever et coucher du soleil
+define('WEATHER_DEFAULT_NAME', 'Lorgies'); // lieu utilisé si le visiteur refuse la localisation
+define('WEATHER_DEFAULT_LAT',  50.5469);   // latitude du lieu par défaut
+define('WEATHER_DEFAULT_LON',  2.8133);    // longitude du lieu par défaut
+define('WEATHER_REFRESH_MIN',  15);        // rafraîchissement en minutes
+
+// ============================================================
+// 10e) NOUVEAUTÉS ET MISES À JOUR (include/nouveautes.php)
+// ============================================================
+define('NEWS_PAGE_ENABLE',     true);      // page « Nouveautés » (fonctionnalités + historique des versions) et son bouton
+define('UPDATE_CHECK_ENABLE',  true);      // vérifie une fois par jour sur GitHub s'il existe une nouvelle version (point rouge discret dans le pied de page)
+define('UPDATE_REPO',          'FRS077/SVXREFLECTOR_LIVE'); // dépôt GitHub contrôlé
+define('UPDATE_CHECK_HOURS',   24);        // délai entre deux vérifications (heures)
 
 // ============================================================
 // 11) ADMINISTRATION (include/admin.php) - identifiants DIFFÉRENTS de ceux du dashboard

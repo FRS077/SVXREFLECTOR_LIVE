@@ -8,6 +8,7 @@
 ini_set('display_errors', 0);
 session_start();
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/include/defaults_tg.php';
 
 
 if (isset($_GET['action']) && $_GET['action'] === 'logout') {
@@ -67,7 +68,7 @@ if (!$isLogged) {
                 <button type="submit" name="login">Se connecter</button>
             </form>
         </div>
-        <footer>Dashboard SvxReflector Live • Conçu par <strong><?= htmlspecialchars(AUTHOR_NAME, ENT_QUOTES, 'UTF-8') ?></strong><?= dashboard_version_html() ?></footer>
+        <footer><?= dashboard_footer_html() ?></footer>
     </body>
     </html>
     <?php
@@ -96,6 +97,9 @@ if (!$isLogged) {
         </div>
         <div class="header-right">
             <div class="datetime-pill" id="liveDatetime">En attente...</div>
+            <?php if (WEATHER_ENABLE): ?>
+            <span class="weather-pill" id="weatherPill" style="display: none;"></span>
+            <?php endif; ?>
             <?php if (SHOW_VISITORS): ?>
             <span class="btn-action" id="visitorsPill" title="Visiteurs connectés en ce moment" style="cursor: default;"><i class="fa-solid fa-eye"></i> <span id="visitorsCount">—</span></span>
             <?php endif; ?>
@@ -103,6 +107,18 @@ if (!$isLogged) {
             <a class="btn-action" href="include/stats.php"><i class="fa-solid fa-chart-column"></i> <span>Statistiques</span></a>
             <a class="btn-action" href="include/carte.php"><i class="fa-solid fa-map-location-dot"></i> <span>Carte</span></a>
             <a class="btn-action" href="include/mumble.php"><i class="fa-solid fa-headset"></i> <span>Mumble</span></a>
+            <?php if (FREEDMR_URL !== ''): ?>
+            <a class="btn-action" href="<?= htmlspecialchars(FREEDMR_URL, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"><i class="fa-solid fa-tower-broadcast"></i> <span><?= htmlspecialchars(FREEDMR_LABEL, ENT_QUOTES, 'UTF-8') ?></span></a>
+            <?php endif; ?>
+            <?php if (TG_PAGE_ENABLE): ?>
+            <a class="btn-action" href="include/talkgroupe.php"><i class="fa-solid fa-hashtag"></i> <span>Talkgroupes</span></a>
+            <?php endif; ?>
+            <?php if (SERVER_PAGE_ENABLE): ?>
+            <a class="btn-action" href="include/serveur.php"><i class="fa-solid fa-server"></i> <span>Serveur</span></a>
+            <?php endif; ?>
+            <?php if (NEWS_PAGE_ENABLE): ?>
+            <a class="btn-action" href="include/nouveautes.php"><i class="fa-solid fa-circle-info"></i> <span>Nouveautés</span></a>
+            <?php endif; ?>
             <?php if (LOG_PAGE_ENABLE): ?>
             <a class="btn-action" href="include/log.php"><i class="fa-solid fa-list-check"></i> <span>Log</span></a>
             <?php endif; ?>
@@ -180,6 +196,16 @@ if (!$isLogged) {
                 <div class="number" id="totalTalkTime">0s</div>
             </div>
         </div>
+        <?php if (INDEX_SHOW_CONNECTED): ?>
+        <div class="stat-card" id="lastConnCard" title="Dernière station connectée au réflecteur">
+            <div class="stat-icon"><i class="fa-solid fa-plug-circle-check"></i></div>
+            <div class="stat-data">
+                <h3>Dernière station connectée</h3>
+                <div class="number" id="lastConnCall" style="font-size: 1.15rem;">—</div>
+                <small id="lastConnTime" style="color: var(--text-muted);"></small>
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
 
     <?php if (ALERT_RELAY_DOWN): ?>
@@ -195,6 +221,10 @@ if (!$isLogged) {
     <div class="stations-bar" id="disconnectedBar" style="display: none;">
         <span class="stations-title" style="color: var(--text-muted);"><i class="fa-solid fa-plug-circle-xmark"></i> Dernières déconnexions :</span>
     </div>
+    <?php endif; ?>
+
+    <?php if (INDEX_SHOW_SERVER && SERVER_PAGE_ENABLE): ?>
+    <a class="stations-bar srv-strip" id="srvBar" href="include/serveur.php" title="Détails du serveur" style="display: none; text-decoration: none;"></a>
     <?php endif; ?>
 
     <div class="main-grid">
@@ -232,7 +262,8 @@ if (!$isLogged) {
     </div>
 
     <footer>
-        Dashboard SvxReflector Live • Conçu par <strong><?= htmlspecialchars(AUTHOR_NAME, ENT_QUOTES, 'UTF-8') ?></strong><?= dashboard_version_html() ?>
+        <?= dashboard_footer_html() ?>
+        <?php if (UPDATE_CHECK_ENABLE && NEWS_PAGE_ENABLE): ?><a class="upd-dot" id="updDot" href="include/nouveautes.php" title="Nouvelle version disponible" style="display: none;"></a><?php endif; ?>
     </footer>
 
     <script>
@@ -359,6 +390,62 @@ if (!$isLogged) {
         const INDEX_DISCONNECTED_MAX = <?= (int)INDEX_DISCONNECTED_MAX ?>;
         const INDEX_DISCONNECTED_HOURS = <?= (int)INDEX_DISCONNECTED_HOURS ?>;
 
+        function fmtUpShort(sec) {
+            sec = Math.max(0, Math.floor(sec));
+            const j = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
+            return j > 0 ? `${j} j ${h} h` : (h > 0 ? `${h} h ${String(m).padStart(2, '0')} min` : `${m} min`);
+        }
+        let srvSkewMs = 0;
+        async function loadServer() {
+            const bar = document.getElementById('srvBar');
+            if (!bar) return;
+            try {
+                const r = await fetch('include/api_server.php?_=' + Date.now(), { cache: 'no-store' });
+                if (!r.ok) return;
+                const d = await r.json();
+                srvSkewMs = d.now * 1000 - Date.now();
+                const lv = (v, w, c) => v >= c ? 'crit' : (v >= w ? 'warn' : 'ok');
+                const chip = (icon, label, val, cls) => `<span class="srv-chip ${cls || 'ok'}"><i class="fa-solid ${icon}"></i><small>${label}</small><b>${val}</b></span>`;
+                const t = d.th, c = [];
+                if (d.cpu && d.cpu.pct != null) c.push(chip('fa-microchip', 'CPU', Math.round(d.cpu.pct) + ' %', lv(d.cpu.pct, t.pct_warn, t.pct_crit)));
+                if (d.temp && d.temp.max != null) c.push(chip('fa-temperature-half', 'Temp.', Math.round(d.temp.max) + ' °C', lv(d.temp.max, t.temp_warn, t.temp_crit)));
+                if (d.mem && d.mem.total) c.push(chip('fa-memory', 'RAM', Math.round(d.mem.pct) + ' %', lv(d.mem.pct, t.pct_warn, t.pct_crit)));
+                (d.disks || []).slice(0, 2).forEach(k => c.push(chip('fa-hard-drive', 'Disque ' + k.path, Math.round(k.pct) + ' %', lv(k.pct, t.pct_warn, t.pct_crit))));
+                if (d.uptime && d.uptime.sec) c.push(chip('fa-power-off', 'En service', fmtUpShort((Date.now() + srvSkewMs) / 1000 - d.uptime.boot), 'ok'));
+                if (!c.length) { bar.style.display = 'none'; return; }
+                bar.innerHTML = '<span class="stations-title"><i class="fa-solid fa-server"></i> Serveur :</span>' + c.join('');
+                bar.style.display = '';
+            } catch (e) {}
+        }
+        loadServer();
+        setInterval(loadServer, 10000);
+
+        const INDEX_SHOW_CONNECTED = <?= json_encode(INDEX_SHOW_CONNECTED) ?>;
+
+        /** Dernière station connectée au réflecteur : indicatif + heure de connexion (carte après « Temps de parole du jour »). */
+        function renderConnected(activeNames) {
+            const callEl = document.getElementById('lastConnCall');
+            const timeEl = document.getElementById('lastConnTime');
+            if (!callEl || !currentState) return;
+            let last = null;
+            for (const e of (currentState.conn_events || [])) {            // du plus récent au plus ancien
+                if (e.event === 'CONNECT' && e.callsign) { last = e; break; }
+            }
+            if (!last) { callEl.textContent = '—'; timeEl.textContent = ''; return; }
+            const d = last.utc_iso ? new Date(last.utc_iso) : null;
+            let when = '';
+            if (d && !isNaN(d.getTime())) {
+                try {
+                    const opt = d.toDateString() === new Date().toDateString()
+                        ? { timeZone: visitorTimeZone, hour: '2-digit', minute: '2-digit' }
+                        : { timeZone: visitorTimeZone, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' };
+                    when = new Intl.DateTimeFormat(visitorLocale, opt).format(d);
+                } catch (err) { when = ''; }
+            }
+            callEl.textContent = last.callsign;
+            timeEl.textContent = (activeNames.has(last.callsign) ? 'Connectée à ' : 'Connectée puis repartie • ') + when;
+        }
+
         /** Stations déconnectées récemment (et pas revenues depuis) : indicatif + heure du départ. */
         function renderDisconnected(activeNames) {
             const bar = document.getElementById('disconnectedBar');
@@ -366,14 +453,16 @@ if (!$isLogged) {
             const title = bar.querySelector('.stations-title');
             const seen = new Set();
             const items = [];
+            let totalDisc = 0, backAgain = 0, tooOld = 0;
             const limitMs = INDEX_DISCONNECTED_HOURS > 0 ? Date.now() - INDEX_DISCONNECTED_HOURS * 3600 * 1000 : 0;
             for (const e of (currentState.conn_events || [])) {            // du plus récent au plus ancien
                 if (e.event !== 'DISCONNECT' || !e.callsign) continue;
                 if (seen.has(e.callsign)) continue;                       // dernière déconnexion de la station seulement
                 seen.add(e.callsign);
-                if (activeNames.has(e.callsign)) continue;                // déjà reconnectée
+                totalDisc++;
+                if (activeNames.has(e.callsign)) { backAgain++; continue; }   // déjà reconnectée
                 const d = e.utc_iso ? new Date(e.utc_iso) : null;
-                if (d && !isNaN(d.getTime()) && limitMs && d.getTime() < limitMs) continue;
+                if (d && !isNaN(d.getTime()) && limitMs && d.getTime() < limitMs) { tooOld++; continue; }
                 items.push({ cs: e.callsign, d: (d && !isNaN(d.getTime())) ? d : null, e });
                 if (items.length >= INDEX_DISCONNECTED_MAX) break;
             }
@@ -413,8 +502,12 @@ if (!$isLogged) {
             // Personnes connectées sur Mumble (hors passerelle), ajoutées à la suite
             const mumble = (mumbleUsers || []).filter(u => !u.gw && !Object.prototype.hasOwnProperty.call(merged, u.name));
 
+            const activeSet = new Set([...Object.keys(merged), ...(mumbleUsers || []).map(u => u.name)]);
             if (INDEX_SHOW_DISCONNECTED) {
-                renderDisconnected(new Set([...Object.keys(merged), ...(mumbleUsers || []).map(u => u.name)]));
+                try { renderDisconnected(activeSet); } catch (err) { console.error('Dernières déconnexions :', err); }
+            }
+            if (INDEX_SHOW_CONNECTED) {
+                try { renderConnected(activeSet); } catch (err) { console.error('Dernière connexion :', err); }
             }
 
             document.getElementById('connectedCount').textContent = String(entries.length + mumble.length);
@@ -935,5 +1028,24 @@ if (!$isLogged) {
             setInterval(tick, 1000);
         })();
     </script>
+<?php if (UPDATE_CHECK_ENABLE && NEWS_PAGE_ENABLE): ?>
+    <script>
+        // Nouvelle version sur GitHub ? (vérifiée une fois par jour côté serveur ; point rouge dans le pied de page)
+        (function () {
+            var dot = document.getElementById('updDot');
+            if (!dot) return;
+            fetch('include/api_update.php', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+                if (d && d.newer) { dot.title = 'Nouvelle version disponible : ' + d.latest + ' (installée : ' + d.current + ')'; dot.style.display = 'inline-block'; }
+            }).catch(function () {});
+        })();
+    </script>
+    <?php endif; ?>
+<?php if (WEATHER_ENABLE): ?>
+    <script>window.WEATHER_CFG = <?= json_encode([
+        'ask' => (bool)WEATHER_ASK_LOCATION, 'icon' => (bool)WEATHER_SHOW_ICON, 'temp' => (bool)WEATHER_SHOW_TEMP, 'sun' => (bool)WEATHER_SHOW_SUN,
+        'name' => WEATHER_DEFAULT_NAME, 'lat' => (float)WEATHER_DEFAULT_LAT, 'lon' => (float)WEATHER_DEFAULT_LON, 'refresh' => max(5, (int)WEATHER_REFRESH_MIN),
+    ], JSON_UNESCAPED_UNICODE) ?>;</script>
+    <script src="include/meteo.js?v=<?= (int)@filemtime(__DIR__ . '/include/meteo.js') ?>"></script>
+    <?php endif; ?>
 </body>
 </html>

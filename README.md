@@ -2,7 +2,7 @@
 
 Tableau de bord web en direct pour un réflecteur **SvxLink** (réseau RNFA) : stations connectées, transmissions (PTT ON/OFF), statistiques, carte, passerelle Mumble, journal des événements et page d'administration.
 
-> **© 2026 Romuald Botte. Tous droits réservés.**
+> **© 2026 Romuald (FRS077). Tous droits réservés.**
 > Ce site, son code source, son design et ses contenus sont protégés. Toute reproduction, distribution ou réutilisation sans autorisation écrite est interdite.
 
 Conçu par **FRS077 Romuald** pour **RNFA**.
@@ -85,6 +85,9 @@ Chaque ligne est de la forme `define('NOM', valeur);` avec un commentaire. `true
 | 8. Image de fond | `BACKGROUND_ENABLE`, `BACKGROUND_FILE` (thème sombre) |
 | 9. Page Log | types d'événements, masquage des IP (`LOG_MASK_IP`, `LOG_MASK_OCTETS`), rafraîchissement |
 | 10. Menus | menus déroulants « Liens » et « Réseaux » (une entrée sans adresse n'est pas affichée) |
+| 10b. Talkgroupes | page `include/talkgroupe.php` (TG local `TG_LOCAL`, noms `$TG_NAMES`), barre « Dernières connexions », lien FreeDMR (`FREEDMR_URL`) |
+| 10c. Serveur | page `include/serveur.php` (CPU, température, mémoire, disque, réseau, uptime), seuils orange/rouge, ligne « Serveur » sur l'index |
+| 10e. Nouveautés | page `include/nouveautes.php`, vérification GitHub quotidienne (`UPDATE_CHECK_ENABLE`, `UPDATE_REPO`), point rouge dans le pied de page de l'index |
 | 11. Administration | identifiants admin, sauvegardes, session |
 
 Deux façons de modifier les réglages :
@@ -134,5 +137,32 @@ Autres points :
 
 ## 8. Licence
 
-**© 2026 Romuald FRS077. Tous droits réservés.** **fra485@orange.fr**
+**© 2026 Romuald (FRS077). Tous droits réservés.**
 Ce site, son code source, son design et ses contenus sont protégés. Toute reproduction, distribution ou réutilisation sans autorisation écrite est interdite.
+
+
+## Installation automatique (`install.sh`)
+
+Le dashboard est toujours installé directement dans `/var/www/html` (seuls ses propres fichiers sont écrits : les autres sites, comme `freedmr_dashboard`, ne sont pas touchés). Debian / Ubuntu / Raspberry Pi OS, en root, `install.sh` posé à côté du dossier `site/` :
+
+```bash
+sudo ./install.sh                       # assistant interactif (Apache ou Nginx, PHP 8.x, mots de passe, logs)
+sudo ./install.sh --server apache --yes # Apache, adresse http://IP/ 
+sudo ./install.sh --server nginx --domain dash.exemple.fr --https --email moi@exemple.fr
+sudo ./install.sh --update              # met à jour le code, garde config.php et version.txt
+sudo ./install.sh --uninstall --purge   # retire la configuration web et les fichiers
+sudo ./install.sh --help                # toutes les options
+```
+
+Le script installe le serveur web, PHP et ses extensions (curl, mbstring, xml, zip), copie le dashboard, règle `config.php`
+(mots de passe, chemins des logs, dossier d'état permanent `/var/lib/svxreflector-dashboard`), autorise la lecture des logs
+par le serveur web, crée la configuration Apache/Nginx, ouvre le pare-feu `ufw` s'il est actif et vérifie la syntaxe PHP.
+
+
+## Nouveautés et mises à jour
+
+La page **Nouveautés** (`include/nouveautes.php`) présente les fonctionnalités du dashboard, l'historique des versions
+(`include/changelog.php`, à compléter à chaque mise à jour) et les notes de la dernière *Release* GitHub.
+Une fois par jour, le serveur interroge GitHub (`UPDATE_REPO`) : si une version plus récente existe, un petit point rouge
+clignote dans le pied de page de l'index. Sans Release publiée, c'est le `version.txt` de la branche `main` qui est comparé.
+Pour annoncer une mise à jour : mettre à jour `version.txt`, publier une Release (ex. tag `v1.0.28`) avec ses notes.

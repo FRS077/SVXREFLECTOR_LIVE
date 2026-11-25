@@ -8,6 +8,7 @@
 ini_set('display_errors', 0);
 session_start();
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/defaults_tg.php';
 
 $isLogged = !ENABLE_AUTH || (!empty($_SESSION['authenticated']) && $_SESSION['authenticated'] === true);
 if (!$isLogged || !LOG_PAGE_ENABLE) {
@@ -98,7 +99,7 @@ if (LOG_SHOW_TG_SELECT)  { $filters['tg']      = ['TG',          'fa-hashtag']; 
     </div>
 
     <footer>
-        Dashboard SvxReflector Live • Conçu par <strong><?= htmlspecialchars(AUTHOR_NAME, ENT_QUOTES, 'UTF-8') ?></strong><?= dashboard_version_html() ?>
+        <?= dashboard_footer_html() ?>
     </footer>
 
     <script>

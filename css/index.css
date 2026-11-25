@@ -360,3 +360,30 @@
         /* Menus déroulants (config.php) */
         /* Image de fond (config.php) */
     
+        .station-chip small { opacity: 0.8; margin-left: 8px; font-size: 0.72rem; }
+        .srv-strip { color: inherit; transition: border-color .2s; }
+        .srv-strip:hover { border-color: var(--accent-cyan); }
+        .srv-chip { display: inline-flex; align-items: center; gap: 7px; padding: 4px 11px; border-radius: 8px; font-size: 0.82rem;
+            background: var(--surface-subtle); border: 1px solid var(--border-color); color: var(--text-main); }
+        .srv-chip i { color: var(--accent-text); font-size: 0.8rem; }
+        .srv-chip small { color: var(--text-muted); }
+        .srv-chip b { font-family: monospace; }
+        .srv-chip.ok b { color: var(--accent-green); }
+        .srv-chip.warn { border-color: var(--accent-amber, #f59e0b); } .srv-chip.warn b { color: var(--accent-amber, #f59e0b); }
+        .srv-chip.crit { border-color: var(--accent-red); } .srv-chip.crit b { color: var(--accent-red); }
+
+.footer-link { color: inherit; text-decoration: none; border-bottom: 1px dotted currentColor; }
+.footer-link:hover { color: var(--accent-text); }
+
+/* Encart météo discret (include/meteo.js) */
+.weather-pill { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem;
+    background: var(--surface-subtle); border: 1px solid var(--border-color); color: var(--text-muted); cursor: default; }
+.weather-pill i { color: var(--accent-text); font-size: 0.85rem; }
+.weather-pill b { color: var(--text-main); font-family: monospace; font-weight: 600; }
+.weather-pill .w-sun { font-family: monospace; font-size: 0.74rem; opacity: 0.85; }
+.weather-pill .w-sun i { font-size: 0.6rem; margin: 0 2px 0 4px; }
+
+/* Point rouge « mise à jour disponible » (pied de page, index.php) */
+.upd-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--accent-red, #ef4444); margin-left: 8px;
+    vertical-align: middle; box-shadow: 0 0 6px var(--accent-red, #ef4444); animation: updBlink 1.2s ease-in-out infinite; cursor: pointer; }
+@keyframes updBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.15; } }

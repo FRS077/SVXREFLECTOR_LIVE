@@ -10,6 +10,7 @@ ini_set('display_errors', 0);
 session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/defaults_tg.php';
 
 if (!ADMIN_ENABLE) {
     http_response_code(404);
@@ -192,7 +193,7 @@ function php_syntax_ok(string $code): bool {
 }
 function write_config(string $newContent, string $oldContent, string &$msg): bool {
     if (!php_syntax_ok($newContent)) { $msg = 'Le fichier obtenu n\'est pas valide : aucune modification écrite.'; return false; }
-    if (!is_writable(CONFIG_PATH)) { $msg = 'config.php n\'est pas modifiable par le serveur web (droits d\'écriture). Voir l\'aide en bas de page.'; return false; }
+    if (!is_writable(CONFIG_PATH)) { $msg = 'config.php n\'est pas modifiable par le serveur web (droits d\'écriture). Voir l\'encadré rouge en haut de la page.'; return false; }
     if (make_backup($oldContent) === null) { $msg = 'Impossible de créer la sauvegarde (dossier backup/ non inscriptible) : rien n\'a été modifié.'; return false; }
     if (@file_put_contents(CONFIG_PATH, $newContent, LOCK_EX) === false) { $msg = 'Écriture de config.php impossible.'; return false; }
     if (function_exists('opcache_invalidate')) @opcache_invalidate(CONFIG_PATH, true);
@@ -333,6 +334,13 @@ if ($logged) {
     rsort($backups);
     $backups = array_map('basename', array_slice($backups, 0, 15));
 }
+// Diagnostic des droits d'écriture (affiché en haut de page quand quelque chose bloque)
+$diag = ['cfg' => is_writable(CONFIG_PATH), 'bak' => false, 'user' => '?', 'owner' => '?', 'perm' => '?'];
+$diag['bak'] = is_dir(BACKUP_DIR) ? is_writable(BACKUP_DIR) : is_writable(dirname(BACKUP_DIR));
+$diag['user'] = function_exists('posix_geteuid') ? (posix_getpwuid(posix_geteuid())['name'] ?? '?') : get_current_user();
+$diag['owner'] = function_exists('posix_getpwuid') ? (posix_getpwuid((int)@fileowner(CONFIG_PATH))['name'] ?? '?') : '?';
+$diag['perm'] = substr(sprintf('%o', (int)@fileperms(CONFIG_PATH)), -4);
+$diag['root'] = realpath(__DIR__ . '/..') ?: dirname(__DIR__);
 $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
 ?>
 <!DOCTYPE html>
@@ -378,6 +386,29 @@ $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SER
         <?php if ($errors): ?><ul><?php foreach ($errors as $e): ?><li><?= h($e) ?></li><?php endforeach; ?></ul><?php endif; ?>
     </div>
     <?php endif; ?>
+
+<?php if ($logged): ?>
+    <?php if (!$diag['cfg'] || !$diag['bak']): ?>
+    <div class="flash err">
+        <strong><i class="fa-solid fa-lock"></i> Lecture seule : le serveur web ne peut pas écrire ici, les modifications ne seront pas enregistrées.</strong>
+        <ul>
+            <li>Le serveur web tourne sous l'utilisateur <code><?= h($diag['user']) ?></code>.</li>
+            <li>config.php : propriétaire <code><?= h($diag['owner']) ?></code>, droits <code><?= h($diag['perm']) ?></code> →
+                <?= $diag['cfg'] ? 'modifiable ✔' : '<strong>NON modifiable ✘</strong>' ?></li>
+            <li>Dossier backup/ : <?= $diag['bak'] ? 'utilisable ✔' : '<strong>NON utilisable ✘</strong> (il doit exister et être inscriptible)' ?></li>
+        </ul>
+        <p style="margin:8px 0 0;">À taper une fois sur le serveur (en root) :</p>
+        <pre style="margin:6px 0 0; padding:10px; background:rgba(0,0,0,0.35); border-radius:8px; overflow:auto; user-select:all;">cd <?= h($diag['root']) ?>
+
+mkdir -p backup
+chown <?= h($diag['user']) ?>:<?= h($diag['user']) ?> config.php backup
+chmod 664 config.php
+chmod 775 backup</pre>
+    </div>
+    <?php else: ?>
+    <div class="flash ok" style="padding:8px 14px; font-size:0.82rem;"><i class="fa-solid fa-circle-check"></i> Écriture autorisée : config.php et backup/ sont modifiables par le serveur (utilisateur <code><?= h($diag['user']) ?></code>).</div>
+    <?php endif; ?>
+<?php endif; ?>
 
 <?php if (!$logged): ?>
     <div class="card-panel login-box">
@@ -524,7 +555,7 @@ $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SER
 <?php endif; ?>
 
     <footer>
-        Dashboard SvxReflector Live • Conçu par <strong><?= htmlspecialchars(AUTHOR_NAME, ENT_QUOTES, 'UTF-8') ?></strong><?= dashboard_version_html() ?>
+        <?= dashboard_footer_html() ?>
     </footer>
 </body>
 </html>
