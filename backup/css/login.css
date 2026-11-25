@@ -1,0 +1,15 @@
+/* login.css - styles de index.php (extraits du fichier PHP, rien d'autre n'a changé) */
+            body { background:#0b0f19; color:#f3f4f6; font-family:'Segoe UI',Arial,sans-serif; display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:100vh; margin:0; }
+            .box { background:#111827; border:1px solid rgba(0,243,255,0.2); padding:30px; border-radius:12px; width:340px; box-shadow:0 0 25px rgba(0,243,255,0.08); }
+            h2 { color:#00f3ff; margin:0 0 20px 0; text-align:center; letter-spacing:1px; font-size:1.4rem; }
+            label { display:block; margin-bottom:6px; color:#9ca3af; font-size:0.9rem; }
+            input { width:100%; padding:10px 12px; margin-bottom:16px; border-radius:8px; border:1px solid #374151; background:#0b0f19; color:#fff; box-sizing:border-box; font-size:0.95rem; }
+            input:focus { border-color:#00f3ff; outline:none; }
+            button { width:100%; padding:11px; border:none; border-radius:8px; background:#00f3ff; color:#0b0f19; font-weight:700; cursor:pointer; font-size:1rem; }
+            .err { color:#f87171; font-size:0.85rem; margin-bottom:14px; text-align:center; background:rgba(239,68,68,0.1); padding:8px; border-radius:6px; }
+            footer { margin-top:24px; color:#9ca3af; font-size:0.85rem; text-align:center; }
+            footer strong { color:#00f3ff; }
+        
+
+.footer-link { color: inherit; text-decoration: none; border-bottom: 1px dotted currentColor; }
+.footer-link:hover { color: var(--accent-text); }
