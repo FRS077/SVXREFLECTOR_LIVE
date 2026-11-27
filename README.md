@@ -21,21 +21,30 @@ Changez les mots de passe ci-dessous dès la première connexion.
 
 ```
 /var/www/html/
-├── index.php            Dashboard principal
-├── config.php           Tous les réglages (true / false, nombres, textes, liens)
-├── version.txt          Numéro de version affiché dans les pieds de page
-├── css/                 Tous les styles (index, stats, info, carte, mumble, log, admin, login)
-│   └── dynamic.php      Styles dépendant de config.php (image de fond, menus, couleurs carte)
-├── image/               Image de fond (fond-uhf-fibre.svg)
-├── include/             Toutes les autres pages et les API
-│   ├── info.php         Infos utilisateurs (fiches des stations)
-│   ├── stats.php        Statistiques jour / semaine / mois / année
-│   ├── carte.php        Carte (France, icônes par type de station)
-│   ├── mumble.php       Page Mumble (connectés, PTT, historique, alertes)
-│   ├── log.php          Journal des événements (IP masquées)
-│   ├── admin.php        Administration de config.php
-│   └── api_*.php        Données JSON utilisées par les pages
-└── backup/              Sauvegardes automatiques de config.php (créé par vous, voir §4)
+├── index.php              Dashboard principal
+├── config.php             Tous les réglages (true / false, nombres, textes, liens)
+├── version.txt            Numéro de version affiché dans les pieds de page
+├── css/                   Tous les styles (index, stats, info, carte, mumble, log, talkgroupe, serveur, nouveautes, admin, login)
+│   └── dynamic.php        Styles dépendant de config.php (image de fond, menus, couleurs carte)
+├── image/                 Image de fond (fond-uhf-fibre.svg)
+├── include/               Toutes les autres pages et les API
+│   ├── info.php           Infos utilisateurs (fiches des stations)
+│   ├── stats.php          Statistiques : jour / semaine / mois / année + analyse des temps de parole
+│   ├── carte.php          Carte (France, icônes par type de station)
+│   ├── mumble.php         Page Mumble (connectés, PTT, historique, alertes)
+│   ├── log.php            Journal des événements (IP masquées)
+│   ├── talkgroupe.php     Talkgroupes : stations présentes sur chaque TG
+│   ├── serveur.php        Serveur : CPU, température, mémoire, disque, réseau, uptime
+│   ├── nouveautes.php     Fonctionnalités, historique des versions, notes de la dernière Release
+│   ├── changelog.php      Historique des versions (à compléter à chaque mise à jour)
+│   ├── admin.php          Administration : config.php, mot de passe, sauvegardes, indicatifs masqués
+│   ├── callsigns_masques.json  Indicatifs à ne pas afficher (balises…), modifiable depuis l'admin
+│   ├── defaults_tg.php    Valeurs par défaut des options absentes de config.php, noms des TG
+│   ├── footer.php         Pied de page commun à toutes les pages
+│   ├── meteo.js           Petite météo de l'en-tête
+│   ├── nav-order.js       Réorganisation des boutons de l'en-tête (bouton ✥)
+│   └── api_*.php          Données JSON utilisées par les pages (log, status, history, tg, server, update…)
+└── backup/                Sauvegardes automatiques de config.php (créé par vous, voir §4)
 ```
 
 ## 2. Identifiants
@@ -78,7 +87,7 @@ Chaque ligne est de la forme `define('NOM', valeur);` avec un commentaire. `true
 | 1. Général | authentification visiteurs, nom de l'auteur, fuseau horaire des logs, limite de parole (`TALK_MAX_SEC`) |
 | 2. Fichiers et services | `LOG_FILE`, `STATUS_URL`, fichiers d'état, log Mumble, noms des passerelles, durées de conservation |
 | 3. Page principale | visiteurs en direct, colonnes Prénom / Ville, dernières déconnexions, liens Facebook / Contact, bouton Admin, alerte « relais tombé » |
-| 4. Statistiques | onglets jour / semaine / mois / année et blocs affichés (dont `STATS_SHOW_ANALYSIS` : analyse des temps de parole sur 30 jours, records, évolution par station, export CSV ; `STATS_MIN_PTT` = durée minimale d'un PTT compté) |
+| 4. Statistiques | onglets jour / semaine / mois / année et blocs affichés ; `STATS_SHOW_ANALYSIS` (analyse des temps de parole sur 30 jours) ; `STATS_MIN_PTT` (durée minimale d'un PTT compté, 2 s par défaut) |
 | 5. Carte | focus France, zoom, légende, icônes par type (-RE relais, -GW passerelle, -M mobile, -P portable) et couleurs |
 | 6. Mumble | blocs affichés et alertes sonores (connexion, départ, passerelle) |
 | 7. Version | lue dans `version.txt` |
@@ -87,7 +96,9 @@ Chaque ligne est de la forme `define('NOM', valeur);` avec un commentaire. `true
 | 10. Menus | menus déroulants « Liens » et « Réseaux » (une entrée sans adresse n'est pas affichée) |
 | 10b. Talkgroupes | page `include/talkgroupe.php` (TG local `TG_LOCAL`, noms `$TG_NAMES`), barre « Dernières connexions », lien FreeDMR (`FREEDMR_URL`) |
 | 10c. Serveur | page `include/serveur.php` (CPU, température, mémoire, disque, réseau, uptime), seuils orange/rouge, ligne « Serveur » sur l'index |
+| 10d. Météo | petite météo dans l'en-tête (`WEATHER_ENABLE`, température, lever / coucher du soleil, icône discrète) |
 | 10e. Nouveautés | page `include/nouveautes.php`, vérification GitHub quotidienne (`UPDATE_CHECK_ENABLE`, `UPDATE_REPO`), point rouge dans le pied de page de l'index |
+| 10f. Indicatifs masqués | `HIDE_CALLSIGNS_ENABLE` : liste dans `include/callsigns_masques.json` |
 | 11. Administration | identifiants admin, sauvegardes, session |
 
 Deux façons de modifier les réglages :
@@ -113,7 +124,7 @@ Autres points :
 - Le serveur web doit pouvoir **lire** les logs (`/var/log/svxreflector`, `/var/log/mumble-server/mumble-server.log`).
 - `STATUS_URL` pointe vers le `/status` du réflecteur (par défaut `http://127.0.0.1:8090/status`).
 - Mettre `HISTORY_FILE` dans un dossier permanent (pas `/tmp`) pour conserver les statistiques après un redémarrage.
-- PHP 7.4 ou plus, avec `mbstring`.
+- PHP 8.0 ou plus, avec `mbstring` (installé par `install.sh`).
 - En haut de la page admin, un encadré indique si l'écriture est autorisée (vert) ou bloquée (rouge, avec les commandes à taper).
 
 ## 5. Sauvegardes et retour arrière
@@ -141,6 +152,20 @@ Autres points :
 Ce site, son code source, son design et ses contenus sont protégés. Toute reproduction, distribution ou réutilisation sans autorisation écrite est interdite.
 
 
+## Statistiques
+
+La page **Statistiques** (`include/stats.php`) regroupe, dans l'ordre :
+
+1. les onglets **Jour / Semaine / Mois / Année** ;
+2. les cartes du jour : transmissions, temps de parole (avec le « Top » et la variation « vs hier » sur l'onglet Jour), stations ayant parlé ;
+3. le **classement des stations** et l'**activité par heure**, sur une ligne ;
+4. l'**analyse des temps de parole** (`STATS_SHOW_ANALYSIS`) : temps et transmissions de la semaine, temps du trimestre, puis les **records des 30 derniers jours** (total réseau, moyenne par jour actif, jour le plus actif, plus longue prise de parole) ;
+5. l'**évolution des temps de parole** par station (8 stations les plus actives, légende cliquable pour masquer / ré-afficher un indicatif, étiquette sur chaque pic) et le **temps de parole total du réseau par jour**, sur une ligne ;
+6. la **qualité de liaison**.
+
+Les PTT plus courts que `STATS_MIN_PTT` secondes (2 par défaut, `0` pour tout compter) et les indicatifs masqués ne sont pas comptés.
+Ces règles s'appliquent aux transmissions reçues après la mise à jour : l'historique déjà enregistré n'est pas recalculé.
+
 ## Installation automatique (`install.sh`)
 
 Le dashboard est toujours installé directement dans `/var/www/html` (seuls ses propres fichiers sont écrits : les autres sites, comme `freedmr_dashboard`, ne sont pas touchés). Debian / Ubuntu / Raspberry Pi OS, en root, `install.sh` posé à côté du dossier `site/` :
@@ -165,7 +190,7 @@ La page **Nouveautés** (`include/nouveautes.php`) présente les fonctionnalité
 (`include/changelog.php`, à compléter à chaque mise à jour) et les notes de la dernière *Release* GitHub.
 Une fois par jour, le serveur interroge GitHub (`UPDATE_REPO`) : si une version plus récente existe, un petit point rouge
 clignote dans le pied de page de l'index. Sans Release publiée, c'est le `version.txt` de la branche `main` qui est comparé.
-Pour annoncer une mise à jour : mettre à jour `version.txt`, publier une Release (ex. tag `v1.0.28`) avec ses notes.
+Pour annoncer une mise à jour : mettre à jour `version.txt`, publier une Release (ex. tag `v1.0.29`) avec ses notes.
 
 ## Réorganiser les boutons de l'en-tête
 
