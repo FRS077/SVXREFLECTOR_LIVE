@@ -142,7 +142,7 @@ unzip -o svx_dashboard.zip          # nouvelle version
 sudo ./install.sh --update
 ```
 
-Ton `config.php` et ton `version.txt` sont conservés (une sauvegarde de `config.php` est faite dans `include/`).
+Ton `config.php`, ton `version.txt` et ta liste d'indicatifs masqués (`include/callsigns_masques.json`) sont conservés (une sauvegarde de `config.php` est faite dans `include/`).
 Les nouvelles options absentes de ton `config.php` prennent leurs valeurs par défaut (`include/defaults_tg.php`).
 
 ---

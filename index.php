@@ -547,6 +547,10 @@ if (!$isLogged) {
         const INDEX_SHOW_NAME_COL = <?= json_encode(INDEX_SHOW_NAME_COL) ?>;
         const INDEX_SHOW_PLACE_COL = <?= json_encode(INDEX_SHOW_PLACE_COL) ?>;
 
+        // Indicatifs masqués (include/callsigns_masques.json) ; jokers « * » acceptés
+        const HIDDEN_CALLS = <?= json_encode(hidden_callsigns(), JSON_UNESCAPED_UNICODE) ?>.map(p => new RegExp('^' + p.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$'));
+        function isHiddenCall(cs) { cs = String(cs || '').trim().toUpperCase(); return HIDDEN_CALLS.some(r => r.test(cs)); }
+
         function renderRecentTable(eventsList) {
             const tbody = document.getElementById('logTableBody');
             tbody.innerHTML = '';
@@ -555,7 +559,7 @@ if (!$isLogged) {
             // Une seule ligne par transmission : le début (PTT ON) et la fin (PTT OFF) sont fusionnés
             const rows = [];
             const open = {};
-            const chrono = (eventsList || []).slice(0, 60).slice().reverse(); // du plus ancien au plus récent
+            const chrono = (eventsList || []).filter(e => !isHiddenCall(e.callsign)).slice(0, 60).slice().reverse(); // du plus ancien au plus récent
             chrono.forEach(d => {
                 if (d.event === 'TALK_START') {
                     const row = { start: d, on: Object.prototype.hasOwnProperty.call(talkers, d.callsign), dur: null, tg: d.talkgroup };

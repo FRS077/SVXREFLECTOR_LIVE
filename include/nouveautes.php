@@ -98,7 +98,7 @@ $esc = fn($s) => htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
         <div class="chg">
             <?php foreach ($changelog as $c): ?>
             <div class="chg-row">
-                <div class="chg-ver"><b>v<?= $esc($c[0]) ?></b><small><?= $esc(preg_replace('/^(\d{4})-(\d{2})-(\d{2})$/', '$3/$2/$1', $c[1])) ?></small></div>
+                <div class="chg-ver"><b>v<?= $esc($c[0]) ?></b><?php if ($c[1] !== ''): ?><small><?= $esc(preg_replace('/^(\d{4})-(\d{2})-(\d{2})$/', '$3/$2/$1', $c[1])) ?></small><?php endif; ?></div>
                 <ul><?php foreach ($c[2] as $line): ?><li><?= $esc($line) ?></li><?php endforeach; ?></ul>
             </div>
             <?php endforeach; ?>

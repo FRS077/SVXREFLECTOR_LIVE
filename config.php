@@ -79,6 +79,8 @@ define('STATS_SHOW_RANKING',     true);   // classement des stations
 define('STATS_SHOW_HOURLY',      true);   // activité par heure
 define('STATS_SHOW_DAILY_CHART', true);   // activité par jour / par mois (semaine, mois, année)
 define('STATS_SHOW_QUALITY',     true);   // qualité de liaison
+define('STATS_MIN_PTT',         2);      // les PTT plus courts que N secondes ne sont pas comptés dans les statistiques (0 = tout compter)
+define('STATS_SHOW_ANALYSIS',    true);   // « Analyse des temps de parole » (30 jours, records, évolution, export CSV)
 
 // ============================================================
 // 5) CARTE (include/carte.php)
@@ -306,6 +308,11 @@ define('NEWS_PAGE_ENABLE',     true);      // page « Nouveautés » (fonctionna
 define('UPDATE_CHECK_ENABLE',  true);      // vérifie une fois par jour sur GitHub s'il existe une nouvelle version (point rouge discret dans le pied de page)
 define('UPDATE_REPO',          'FRS077/SVXREFLECTOR_LIVE'); // dépôt GitHub contrôlé
 define('UPDATE_CHECK_HOURS',   24);        // délai entre deux vérifications (heures)
+
+// ============================================================
+// 10f) INDICATIFS MASQUÉS (balises, passerelles…)
+// ============================================================
+define('HIDE_CALLSIGNS_ENABLE', true);     // true = les indicatifs de include/callsigns_masques.json sont masqués dans « Transmissions en Direct » et les Statistiques / false = tout est affiché (liste modifiable dans la page admin)
 
 // ============================================================
 // 11) ADMINISTRATION (include/admin.php) - identifiants DIFFÉRENTS de ceux du dashboard

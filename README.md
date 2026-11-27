@@ -78,7 +78,7 @@ Chaque ligne est de la forme `define('NOM', valeur);` avec un commentaire. `true
 | 1. Général | authentification visiteurs, nom de l'auteur, fuseau horaire des logs, limite de parole (`TALK_MAX_SEC`) |
 | 2. Fichiers et services | `LOG_FILE`, `STATUS_URL`, fichiers d'état, log Mumble, noms des passerelles, durées de conservation |
 | 3. Page principale | visiteurs en direct, colonnes Prénom / Ville, dernières déconnexions, liens Facebook / Contact, bouton Admin, alerte « relais tombé » |
-| 4. Statistiques | onglets jour / semaine / mois / année et blocs affichés |
+| 4. Statistiques | onglets jour / semaine / mois / année et blocs affichés (dont `STATS_SHOW_ANALYSIS` : analyse des temps de parole sur 30 jours, records, évolution par station, export CSV ; `STATS_MIN_PTT` = durée minimale d'un PTT compté) |
 | 5. Carte | focus France, zoom, légende, icônes par type (-RE relais, -GW passerelle, -M mobile, -P portable) et couleurs |
 | 6. Mumble | blocs affichés et alertes sonores (connexion, départ, passerelle) |
 | 7. Version | lue dans `version.txt` |
@@ -173,3 +173,10 @@ Sur la page principale, le bouton ✥ (à côté de « Déconnexion ») active l
 se déplacent par glisser-déposer ou avec les petites flèches ◀ ▶ (écrans tactiles). « Terminé » enregistre, « Réinitialiser »
 rétablit l'ordre d'origine. La date et l'heure, les visiteurs et la météo restent fixes, « Déconnexion » reste toujours en dernier.
 L'ordre est mémorisé dans le navigateur de chaque visiteur. Désactivable avec `NAV_REORDER_ENABLE` (config.php, section 10e).
+
+## Indicatifs masqués
+
+`include/callsigns_masques.json` liste les indicatifs (balises, passerelles…) à ne pas afficher dans « Transmissions en Direct »
+et dans les Statistiques (jokers `*` acceptés, ex. `RNFA-*`). Ils restent visibles ailleurs (stations actives, dernière personne
+ayant parlé, carte…). Liste modifiable depuis la page admin ; activation générale avec `HIDE_CALLSIGNS_ENABLE` (config.php, section 10f).
+Lors d'une mise à jour, ne pas écraser ce fichier (le script `install.sh --update` le conserve).

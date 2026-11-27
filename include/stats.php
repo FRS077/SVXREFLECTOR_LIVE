@@ -88,23 +88,16 @@ if (!$isLogged) {
     <div class="kpi-grid">
         <div class="kpi">
             <div class="kpi-icon"><i class="fa-solid fa-comments"></i></div>
-            <div><h3 id="kpiTxTitle">Transmissions du jour</h3><div class="number" id="kpiTx">0</div></div>
+            <div><h3 id="kpiTxTitle">Transmissions du jour</h3><div class="number" id="kpiTx">0</div><div class="sub" id="kpiTxSub"></div></div>
         </div>
         <div class="kpi">
             <div class="kpi-icon"><i class="fa-solid fa-stopwatch"></i></div>
-            <div><h3 id="kpiTalkTitle">Temps de parole du jour</h3><div class="number" id="kpiTalk">0s</div></div>
+            <div><h3 id="kpiTalkTitle">Temps de parole du jour</h3><div class="number" id="kpiTalk">0s</div><div class="sub" id="kpiTalkSub"></div></div>
         </div>
         <div class="kpi">
             <div class="kpi-icon"><i class="fa-solid fa-microphone-lines"></i></div>
-            <div><h3>Stations ayant parlé</h3><div class="number" id="kpiSpeakers">0</div></div>
+            <div><h3>Stations ayant parlé</h3><div class="number" id="kpiSpeakers">0</div><div class="sub" id="kpiSpkSub"></div></div>
         </div>
-        <div class="kpi">
-            <div class="kpi-icon"><i class="fa-solid fa-trophy"></i></div>
-            <div>
-                <h3>Plus longue transmission</h3>
-                <div class="number" id="kpiLongest">—</div>
-                <div class="sub" id="kpiLongestSub"></div>
-            </div>
         </div>
     </div>
     <?php endif; ?>
@@ -134,18 +127,178 @@ if (!$isLogged) {
             <div class="hours-note">Nombre de transmissions par heure (heure du serveur, fuseau Europe/Paris).</div>
         </div>
         <?php endif; ?>
+
     </div>
     <?php endif; ?>
 
-    <?php if (STATS_SHOW_DAILY_CHART): ?>
-    <div class="card-panel" id="dailyPanel" style="display:none;">
-        <div class="panel-header">
-            <h2><i class="fa-solid fa-calendar-days"></i> <span id="dailyTitle">Activité par jour</span></h2>
-            <small id="dailyInfo">—</small>
+
+
+
+
+    <?php if (STATS_SHOW_ANALYSIS): ?>
+    <section class="an" id="analysis">
+        <div class="card-panel">
+            <div class="panel-header">
+                <h2><i class="fa-solid fa-chart-column"></i> Analyse des temps de parole</h2>
+                <small id="anDateLabel">—</small>
+            </div>
+            <div class="an-bar">
+                <label for="anDate">Analyse jusqu'au</label>
+                <input type="date" id="anDate">
+                <button type="button" class="btn-action" id="anGo">Afficher</button>
+            </div>
+            <div class="kpi-grid" id="anKpis"><div class="empty">Chargement…</div></div>
         </div>
-        <div class="daily-bars" id="dailyChart"></div>
-        <div class="hours-note">Nombre de transmissions (survolez une barre pour le détail).</div>
-    </div>
+
+        <div class="card-panel">
+            <div class="panel-header"><h2><i class="fa-solid fa-trophy"></i> Records – 30 derniers jours</h2></div>
+            <div class="kpi-grid" id="anRecords"></div>
+        </div>
+
+        <div class="grid-2">
+            <div class="card-panel">
+                <div class="panel-header"><h2><i class="fa-solid fa-chart-line"></i> Évolution des temps de parole – 30 derniers jours</h2><small>8 stations les plus actives</small></div>
+                <div class="an-legend" id="anLegend"></div>
+                <div id="anEvo" class="svgbox"></div>
+                <div class="hours-note">Clique sur un indicatif pour le masquer / le ré-afficher. Étiquette = pic de la station. PTT de moins de <?= (int)STATS_MIN_PTT ?> s non comptés.</div>
+            </div>
+            <div class="card-panel">
+                <div class="panel-header"><h2><i class="fa-solid fa-chart-simple"></i> Temps de parole total du réseau par jour – 30 derniers jours</h2></div>
+                <div id="anDaily" class="svgbox"></div>
+                <div class="hours-note">Survole une barre pour le détail ; le jour record est en ambre. Indicatifs masqués exclus.</div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+    (function () {
+        const $a = id => document.getElementById(id);
+        const E = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const hms = sec => { sec = Math.max(0, Math.round(sec)); const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return String(h).padStart(2, '0') + 'h ' + String(m).padStart(2, '0') + 'm ' + String(s).padStart(2, '0') + 's'; };
+        const short = sec => { sec = Math.round(sec); if (sec < 60) return sec + 's'; const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60); return h ? h + 'h' + String(m).padStart(2, '0') : m + ' min'; };
+        const axisT = min => { min = Math.round(min); return min >= 60 ? Math.floor(min / 60) + 'h' + String(min % 60).padStart(2, '0') : min + ' min'; };
+        const fr = k => k.slice(8) + '/' + k.slice(5, 7) + '/' + k.slice(0, 4);
+        const COL = ['var(--accent-cyan)', 'var(--accent-amber)', 'var(--accent-green)', 'var(--accent-red)', '#a78bfa', '#f472b6', '#5eead4', '#94a3b8'];
+        const OFF = new Set();   // indicatifs masqués dans le graphique
+        let AN = null;
+
+        function nice(maxMin) {   // pas "rond" pour l'axe (minutes)
+            const steps = [1, 2, 5, 10, 15, 20, 30, 40, 60, 120, 180, 240, 360, 600];
+            let st = steps.find(x => maxMin / x <= 5) || 600;
+            return { st, top: Math.max(st, Math.ceil(maxMin / st) * st) };
+        }
+        function frame(topMin, st, W, H, pl, pr, pt, pb, ytitle) {
+            let g = '';
+            for (let v = 0; v <= topMin + 0.001; v += st) {
+                const y = pt + (H - pt - pb) * (1 - v / topMin);
+                g += '<line class="gl" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y + '" y2="' + y + '"/><text class="ax" x="' + (pl - 6) + '" y="' + (y + 3) + '" text-anchor="end">' + axisT(v) + '</text>';
+            }
+            return g + '<text class="ax" transform="rotate(-90 11 ' + (H / 2) + ')" x="11" y="' + (H / 2) + '" text-anchor="middle">' + ytitle + '</text>';
+        }
+        function xlabels(labels, X, H, step) {
+            return labels.map((l, i) => (i % step === 0) ? '<text class="ax" x="' + X(i) + '" y="' + (H - 8) + '" text-anchor="middle">' + E(l) + '</text>' : '').join('');
+        }
+
+        function bars(el, vals, labels, titles, color, ytitle, W, H, step) {
+            const pl = 50, pr = 12, pt = 12, pb = 28;
+            const maxMin = Math.max(...vals, 1) / 60, n = nice(maxMin);
+            const bw = (W - pl - pr) / vals.length, mx = Math.max(...vals);
+            let g = frame(n.top, n.st, W, H, pl, pr, pt, pb, ytitle);
+            vals.forEach((v, i) => {
+                const h = (H - pt - pb) * (v / 60 / n.top), x = pl + bw * i + bw * 0.16;
+                g += '<rect class="bx' + (v === mx && v > 0 ? ' pk' : '') + '" x="' + x + '" y="' + (H - pb - h) + '" width="' + bw * 0.68 + '" height="' + Math.max(h, v > 0 ? 1.5 : 0) + '" rx="3" style="fill:' + color + '"><title>' + E(titles[i]) + '</title></rect>';
+            });
+            g += xlabels(labels, i => pl + bw * (i + 0.5), H, step);
+            el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="svgc">' + g + '</svg>';
+        }
+
+        function lines(el) {
+            const W = 560, H = 330, pl = 50, pr = 14, pt = 22, pb = 28, S = AN.series;
+            if (!S.length) { el.innerHTML = '<div class="empty">Pas encore de données.</div>'; $a('anLegend').innerHTML = ''; return; }
+            const vis = S.map((s, k) => ({ s, k })).filter(o => !OFF.has(o.s.cs));
+            const all = vis.flatMap(o => o.s.values), n = nice(Math.max(...all, 1) / 60), len = S[0].values.length;
+            const X = i => pl + (W - pl - pr) * i / (len - 1), Y = v => pt + (H - pt - pb) * (1 - v / 60 / n.top);
+            const keys = AN.days.slice(60).map(d => d.key);
+            let g = frame(n.top, n.st, W, H, pl, pr, pt, pb, 'Minutes de parole'), tags = '', used = [];
+            vis.forEach(o => {
+                const c = COL[o.k % COL.length], s = o.s, pts = s.values.map((v, i) => X(i).toFixed(1) + ',' + Y(v).toFixed(1));
+                g += '<polyline class="evl" style="stroke:' + c + '" points="' + pts.join(' ') + '"/>';
+                s.values.forEach((v, i) => { g += '<circle class="evd" style="stroke:' + c + '" cx="' + X(i) + '" cy="' + Y(v) + '" r="3"><title>' + E(s.cs + ' – ' + keys[i].slice(8) + '/' + keys[i].slice(5, 7) + ' : ' + short(v)) + '</title></circle>'; });
+                const mx = Math.max(...s.values);
+                if (mx > 0) {   // étiquette sur le pic
+                    const i = s.values.indexOf(mx), tw = s.cs.length * 6.4 + 12;
+                    let x = Math.min(Math.max(X(i), pl + tw / 2), W - pr - tw / 2), y = Y(mx) - 16;
+                    for (let t = 0; t < 8 && used.some(u => Math.abs(u[0] - x) < (u[2] + tw) / 2 && Math.abs(u[1] - y) < 16); t++) y -= 17;
+                    y = Math.max(y, 2); used.push([x, y, tw]);
+                    tags += '<g class="evt"><rect x="' + (x - tw / 2) + '" y="' + y + '" width="' + tw + '" height="15" rx="7" style="fill:' + c + '"/><text x="' + x + '" y="' + (y + 11) + '" text-anchor="middle">' + E(s.cs) + '</text></g>';
+                }
+            });
+            g += tags + xlabels(keys.map(k => k.slice(8) + '/' + k.slice(5, 7)), X, H, 3);
+            el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="svgc">' + g + '</svg>';
+            $a('anLegend').innerHTML = S.map((s, k) => '<button type="button" class="lg' + (OFF.has(s.cs) ? ' off' : '') + '" data-cs="' + E(s.cs) + '"><i style="border-color:' + COL[k % COL.length] + '"></i>' + E(s.cs) + '</button>').join('');
+            $a('anLegend').querySelectorAll('.lg').forEach(b => b.addEventListener('click', () => { const c = b.dataset.cs; OFF.has(c) ? OFF.delete(c) : OFF.add(c); lines($a('anEvo')); }));
+        }
+
+        function kpi(icon, t, v, s1, s2) { return '<div class="kpi"><div class="kpi-icon"><i class="fa-solid ' + icon + '"></i></div><div><h3>' + t + '</h3><div class="number">' + v + '</div>' + (s1 ? '<div class="sub">' + s1 + '</div>' : '') + (s2 ? '<div class="sub">' + s2 + '</div>' : '') + '</div></div>'; }
+        function vs(cur, ref, lab, kind) {
+            if (!(ref > 0)) return '— vs ' + lab + ' : pas de donnée';
+            const p = Math.round((cur - ref) / ref * 100);
+            return '<span class="' + (p > 0 ? 'up' : p < 0 ? 'down' : '') + '">' + (p > 0 ? '▲ +' : p < 0 ? '▼ ' : '= ') + p + ' %</span> vs ' + lab;
+        }
+
+        function render() {
+            const D = AN.days, n = D.length, cur = D[n - 1], prev = D[n - 2] || { talk: 0, tx: 0 };
+            const w = D.slice(n - 7), wp = D.slice(n - 14, n - 7);
+            const sum = (a, k) => a.reduce((x, d) => x + d[k], 0);
+            const q = sum(D, 'talk');
+            $a('anDateLabel').textContent = fr(AN.date);
+            $a('anKpis').innerHTML =
+                kpi('fa-calendar-week', 'Temps semaine', hms(sum(w, 'talk')), 'Top : ' + E(AN.top_week || '—'), vs(sum(w, 'talk'), sum(wp, 'talk'), 'sem. préc.')) +
+                kpi('fa-comments', 'Transmissions semaine', sum(w, 'tx'), '7 derniers jours', vs(sum(w, 'tx'), sum(wp, 'tx'), 'sem. préc.')) +
+                kpi('fa-hourglass-half', 'Temps trimestre', hms(q), 'Top : ' + E(AN.top_quarter || '—'), '90 derniers jours');
+            const d30 = D.slice(n - 30), act = d30.filter(d => d.talk > 0), tot = sum(d30, 'talk');
+            const best = act.reduce((a, d) => d.talk > a.talk ? d : a, { talk: 0, key: '' });
+            $a('anRecords').innerHTML =
+                kpi('fa-network-wired', 'Total réseau', hms(tot), act.length + ' jour(s) avec activité', '') +
+                kpi('fa-gauge-high', 'Moyenne par jour', hms(act.length ? tot / act.length : 0), 'Jours actifs uniquement', '') +
+                kpi('fa-fire', 'Jour le plus actif', best.key ? fr(best.key) : '—', best.key ? hms(best.talk).replace(/^00h /, '') : '', '') +
+                kpi('fa-trophy', 'Plus longue prise de parole', hms(AN.record.talk), E(AN.record.cs || '—') + (AN.record.date ? ' – ' + fr(AN.record.date) : ''), '');
+            lines($a('anEvo'));
+            bars($a('anDaily'), d30.map(d => d.talk), d30.map(d => d.key.slice(8) + '/' + d.key.slice(5, 7)), d30.map(d => fr(d.key) + ' : ' + short(d.talk) + ' • ' + d.tx + ' TX'), 'var(--accent-cyan)', 'Minutes', 560, 330, 3);
+        }
+
+
+        // Cartes du haut : « Top » et variation vs hier (onglet Jour, jour courant)
+        window.anKpiExtra = function () {
+            const t = $a('kpiTalkSub'), x = $a('kpiTxSub'), sp = $a('kpiSpkSub'); if (!t || !x) return;
+            const top = Object.entries(stats).filter(([, v]) => v.talk_time > 0).sort((a, b) => b[1].talk_time - a[1].talk_time)[0];
+            let dTalk = '', dTx = '', dSpk = '';
+            if (period === 'day' && AN && AN.days && AN.days.length > 1 && AN.days[AN.days.length - 1].key === statsDate) {
+                const y = AN.days[AN.days.length - 2];
+                dTalk = vs(totalTalk, y.talk, 'hier'); dTx = vs(txCount, y.tx, 'hier');
+                dSpk = vs(Object.values(stats).filter(v => v.tx > 0).length, y.spk, 'hier');
+            }
+            t.innerHTML = (top ? 'Top : ' + E(top[0]) : '') + (dTalk ? '<br>' + dTalk : '');
+            x.innerHTML = dTx;
+            if (sp) sp.innerHTML = dSpk;
+        };
+
+        async function load(date) {
+            try {
+                const r = await fetch('api_history.php?mode=analysis&date=' + encodeURIComponent(date || '') + '&x=' + Date.now(), { cache: 'no-store' });
+                const j = await r.json();
+                if (j.error) throw new Error(j.error);
+                AN = j; $a('anDate').value = j.date;
+                render(); window.anKpiExtra();
+            } catch (e) { $a('anKpis').innerHTML = '<div class="empty">Analyse indisponible.</div>'; }
+        }
+
+        $a('anGo').addEventListener('click', () => load($a('anDate').value));
+        $a('anDate').addEventListener('change', () => load($a('anDate').value));
+        load('');
+        setInterval(() => { if (!$a('anDate').value || $a('anDate').value === (AN && AN.date)) load($a('anDate').value); }, 60000);
+    })();
+    </script>
     <?php endif; ?>
 
     <?php if (STATS_SHOW_QUALITY): ?>
@@ -272,15 +425,8 @@ if (!$isLogged) {
             const speakers = Object.values(stats).filter(s => s.tx > 0).length;
             document.getElementById('kpiSpeakers').textContent = String(speakers);
 
-            if (longest && longest.talk_time > 0) {
-                document.getElementById('kpiLongest').textContent = fmt(longest.talk_time);
-                document.getElementById('kpiLongestSub').textContent = longest.callsign;
-            } else {
-                document.getElementById('kpiLongest').textContent = '—';
-                document.getElementById('kpiLongestSub').textContent = '';
-            }
-
             updateDayLabel();
+            if (window.anKpiExtra) window.anKpiExtra();
         }
 
         function updateDayLabel() {
@@ -398,6 +544,24 @@ if (!$isLogged) {
             return res.json();
         }
 
+        // Indicatifs masqués (include/callsigns_masques.json) ; jokers « * » acceptés
+        const HIDDEN_CALLS = <?= json_encode(hidden_callsigns(), JSON_UNESCAPED_UNICODE) ?>.map(p => new RegExp('^' + p.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$'));
+        function isHiddenCall(cs) { cs = String(cs || '').trim().toUpperCase(); return HIDDEN_CALLS.some(r => r.test(cs)); }
+
+        /** Onglet « Jour » : retire les indicatifs masqués du classement et des totaux (les autres périodes sont filtrées côté serveur). */
+        function dropHiddenDay() {
+            Object.keys(stats).forEach(cs => {
+                if (!isHiddenCall(cs)) return;
+                txCount = Math.max(0, txCount - (stats[cs].tx || 0));
+                totalTalk = Math.max(0, totalTalk - (stats[cs].talk_time || 0));
+                delete stats[cs];
+            });
+            if (longest && isHiddenCall(longest.callsign)) {
+                longest = { callsign: '', talk_time: 0, datetime: '' };
+                Object.entries(stats).forEach(([cs, s]) => { if ((s.max_talk || 0) > longest.talk_time) longest = { callsign: cs, talk_time: s.max_talk, datetime: '' }; });
+            }
+        }
+
         async function loadAll() {
             const errBox = document.getElementById('errorBox');
             const errors = [];
@@ -434,9 +598,10 @@ if (!$isLogged) {
                     hourlyTx = st.hourly_tx || [];
                     hourlyTalk = st.hourly_talk || [];
                     longest = st.longest || {};
-                    txCount = st.tx_count || 0;
+                    txCount = Math.max(0, (st.tx_count || 0) - (st.short_tx || 0));   // PTT courts exclus des statistiques
                     totalTalk = st.total_talk_time || 0;
                     statsDate = st.stats_date || '';
+                    dropHiddenDay();
                 }
             } catch (e) {
                 errors.push('Impossible de contacter le serveur.');
@@ -451,8 +616,8 @@ if (!$isLogged) {
             applyPeriodTexts();
             renderKpis();
             renderRank();
-            renderHours();
             renderDaily();
+            renderHours();
             renderQuality();
         }
 

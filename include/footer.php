@@ -1,7 +1,9 @@
 <?php
 /**
  * fichier footer.php
+ * Signature du dashboard (pied de page) : texte et lien de l'auteur, stockés sous forme encodée et vérifiés.
  * Auteur : FRS077 Romuald pour RNFA - © 2026 Romuald (FRS077). Tous droits réservés.
+ * Ne pas modifier : si le contenu est altéré, la signature d'origine est rétablie automatiquement.
  */
 if (!function_exists('dashboard_footer_html')) {
     function dashboard_footer_decode(string $blob): ?array {
@@ -16,7 +18,7 @@ if (!function_exists('dashboard_footer_html')) {
         $B = defined('SVX_SIG_B') ? SVX_SIG_B : '';
         $H = defined('SVX_SIG_H') ? SVX_SIG_H : '';
         $d = null;
-        foreach ([$A, $B] as $b) {                         
+        foreach ([$A, $B] as $b) {                         // 1re copie valide (empreinte conforme) = utilisée
             if ($b !== '' && hash_equals($H, hash('sha256', $b))) { $d = dashboard_footer_decode($b); if ($d) break; }
         }
         if (!$d) { $d = ['a' => 'Dashboard SvxReflector Live • Conçu par', 'n' => 'FRS077 Romuald pour RNFA', 'u' => 'https://rnfa.fr']; }

@@ -139,6 +139,32 @@
         .hlbl { font-size: 0.65rem; color: var(--text-muted); font-family: monospace; margin-top: 4px; }
         .hours-note { color: var(--text-muted); font-size: 0.75rem; margin-top: 10px; }
 
+
+
+        /* Analyse des temps de parole */
+        .an { display: flex; flex-direction: column; }
+        .an .grid-2 { margin-bottom: 20px; }
+        .an-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: var(--surface-subtle); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; }
+        .an-bar label { color: var(--text-muted); font-weight: 700; font-size: 0.85rem; }
+        .an-bar input[type=date] { background: var(--card-bg); color: var(--text-main, inherit); border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 10px; font: inherit; color-scheme: dark light; }
+        .kpi-grid .empty { grid-column: 1 / -1; }
+        .kpi .sub .up { color: var(--accent-green); font-weight: bold; }
+        .kpi .sub .down { color: var(--accent-red); font-weight: bold; }
+        .an .kpi-grid { margin-bottom: 0; }
+                .an-legend { display: flex; flex-wrap: wrap; gap: 8px 12px; justify-content: center; margin-bottom: 8px; font-size: 0.8rem; }
+        .an-legend .lg { background: none; border: 0; color: var(--text-main, inherit); font: inherit; cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+        .an-legend .lg:hover { background: var(--surface-subtle); }
+        .an-legend .lg.off { text-decoration: line-through; opacity: .45; }
+        .svgc .evt text { fill: #0b1220; font-size: 10px; font-weight: 800; }
+        .an-legend i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; border: 3px solid; margin-right: 5px; vertical-align: -1px; }
+        .svgbox { width: 100%; }
+        .svgc { width: 100%; height: auto; display: block; }
+        .svgc .gl { stroke: var(--border-color); stroke-width: 1; opacity: .6; }
+        .svgc .ax { fill: var(--text-muted); font-size: 11px; font-family: inherit; }
+        .svgc .bx { opacity: .85; } .svgc .bx.pk { fill: var(--accent-amber) !important; opacity: 1; }
+        .svgc .evl { fill: none; stroke-width: 2; stroke-linejoin: round; }
+        .svgc .evd { fill: var(--card-bg); stroke-width: 2; }
+
         /* Qualité */
         .table-wrapper { overflow-x: auto; max-height: 520px; overflow-y: auto; }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem; }

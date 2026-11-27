@@ -15,7 +15,10 @@ $__d = [
     'TG_SHOW_MONITORED'     => true,
     'TG_SHOW_SELECTED'      => true,
     'TG_NAME_DEFAULT'       => 'TG provisoire',
+    'HIDE_CALLSIGNS_ENABLE' => true,
     'NAV_REORDER_ENABLE'    => true,
+    'STATS_SHOW_ANALYSIS'   => true,
+    'STATS_MIN_PTT'         => 2,
     'NEWS_PAGE_ENABLE'      => true,
     'UPDATE_CHECK_ENABLE'   => true,
     'UPDATE_REPO'           => 'FRS077/SVXREFLECTOR_LIVE',
@@ -61,3 +64,29 @@ if (!defined('SVX_SIG_B')) {
     define('SVX_SIG_H', '3bf54a8bd23056c8045ec90c2c6fcc9b1376e45a5c3b0715335a8801d5cf3be0');
 }
 require_once __DIR__ . '/footer.php';
+
+/* ---------- Indicatifs masqués (balises, passerelles…) : include/callsigns_masques.json ----------
+ * Masqués uniquement dans « Transmissions en Direct » (index.php) et dans les Statistiques.
+ * Jokers acceptés : « RNFA-* ». Sans fichier, seule la balise RNFA-APRS est masquée. */
+if (!defined('HIDE_CALLSIGNS_FILE')) define('HIDE_CALLSIGNS_FILE', __DIR__ . '/callsigns_masques.json');
+if (!function_exists('hidden_callsigns')) {
+    function hidden_callsigns(): array {
+        static $list = null;
+        if ($list !== null) return $list;
+        $list = [];
+        if (!HIDE_CALLSIGNS_ENABLE) return $list;
+        $raw = is_readable(HIDE_CALLSIGNS_FILE) ? json_decode((string)@file_get_contents(HIDE_CALLSIGNS_FILE), true) : null;
+        $src = is_array($raw) ? (isset($raw['callsigns']) && is_array($raw['callsigns']) ? $raw['callsigns'] : $raw) : ['RNFA-APRS'];
+        foreach ($src as $c) {
+            $c = strtoupper(trim((string)$c));
+            if ($c !== '' && preg_match('/^[A-Z0-9*\/_\-\. ()]{1,40}$/', $c)) $list[$c] = $c;
+        }
+        $list = array_values($list);
+        return $list;
+    }
+    function callsign_is_hidden(string $cs): bool {
+        $cs = strtoupper(trim($cs));
+        foreach (hidden_callsigns() as $p) { if ($p === $cs || (strpos($p, '*') !== false && fnmatch($p, $cs))) return true; }
+        return false;
+    }
+}

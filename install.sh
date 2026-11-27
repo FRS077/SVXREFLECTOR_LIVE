@@ -225,6 +225,7 @@ if [ "$IS_UPDATE" -eq 1 ]; then
   TMP_BK="$(mktemp -d)"
   cp -a "$INSTALL_DIR/config.php" "$TMP_BK/config.php" 2>/dev/null || true
   cp -a "$INSTALL_DIR/version.txt" "$TMP_BK/version.txt" 2>/dev/null || true
+  cp -a "$INSTALL_DIR/include/callsigns_masques.json" "$TMP_BK/callsigns_masques.json" 2>/dev/null || true
   BK="$INSTALL_DIR/include/backup-avant-maj-$(date +%Y%m%d-%H%M%S).config.php.bak"
   cp -a "$INSTALL_DIR/config.php" "$BK" 2>/dev/null && ok "Sauvegarde de ton config.php : $BK" || true
 fi
@@ -233,8 +234,9 @@ fi
 if [ "$IS_UPDATE" -eq 1 ]; then
   [ -f "$TMP_BK/config.php" ]  && cp -a "$TMP_BK/config.php"  "$INSTALL_DIR/config.php"
   [ -f "$TMP_BK/version.txt" ] && cp -a "$TMP_BK/version.txt" "$INSTALL_DIR/version.txt"
+  [ -f "$TMP_BK/callsigns_masques.json" ] && cp -a "$TMP_BK/callsigns_masques.json" "$INSTALL_DIR/include/callsigns_masques.json"
   rm -rf "$TMP_BK"
-  ok "Code mis à jour. Ton config.php et ton version.txt n'ont pas été touchés."
+  ok "Code mis à jour. Ton config.php, ton version.txt et ta liste d'indicatifs masqués n'ont pas été touchés."
   warn "Nouvelles options éventuelles : consulte config.php du paquet (les valeurs par défaut s'appliquent sinon)."
 fi
 

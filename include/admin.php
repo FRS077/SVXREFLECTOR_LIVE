@@ -292,6 +292,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $overlay = []; $menuOverlay = [];
                 } else { $flash = $msg; $flashType = 'err'; }
             }
+        } elseif ($act === 'hidden') {
+            $out = []; $bad = [];
+            foreach (preg_split('/[\r\n,;]+/', (string)($_POST['hidden_list'] ?? '')) as $c) {
+                $c = strtoupper(trim($c));
+                if ($c === '') continue;
+                if (!preg_match('/^[A-Z0-9*\/_\-\. ()]{1,40}$/', $c)) { $bad[] = $c; continue; }
+                $out[$c] = $c;
+            }
+            $json = json_encode(['callsigns' => array_values($out)], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            if ($bad) { $flash = 'Indicatif(s) invalide(s) : ' . implode(', ', array_slice($bad, 0, 5)) . ' (lettres, chiffres, - _ . / et * autorisés).'; $flashType = 'err'; }
+            elseif (@file_put_contents(HIDE_CALLSIGNS_FILE, $json . "\n", LOCK_EX) === false) {
+                $flash = 'Écriture impossible dans ' . basename(HIDE_CALLSIGNS_FILE) . ' : chown www-data:www-data include/' . basename(HIDE_CALLSIGNS_FILE); $flashType = 'err';
+            } else { $flash = count($out) . ' indicatif(s) masqué(s) enregistré(s).'; }
         } elseif ($act === 'password') {
             $cur = (string)($_POST['cur'] ?? ''); $new = (string)($_POST['new'] ?? ''); $conf = (string)($_POST['conf'] ?? '');
             if (!password_verify($cur, ADMIN_PASS_HASH)) { $flash = 'Mot de passe actuel incorrect.'; $flashType = 'err'; }
@@ -504,6 +517,23 @@ chmod 775 backup</pre>
             <button class="btn-primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button>
         </div>
     </form>
+
+    <div class="card-panel" style="margin-bottom:18px;">
+        <div class="panel-header"><h2><i class="fa-solid fa-eye-slash"></i> Indicatifs masqués (balises, passerelles…)</h2></div>
+        <form method="post" autocomplete="off" style="max-width:520px;">
+            <input type="hidden" name="do" value="hidden">
+            <input type="hidden" name="csrf" value="<?= h(csrf_token()) ?>">
+            <label class="f-label">Un indicatif par ligne (joker « * » accepté, ex. <code>RNFA-*</code>)</label>
+            <?php
+                $hf = is_readable(HIDE_CALLSIGNS_FILE) ? json_decode((string)file_get_contents(HIDE_CALLSIGNS_FILE), true) : null;
+                $hl = is_array($hf) ? ($hf['callsigns'] ?? $hf) : ['RNFA-APRS'];
+            ?>
+            <textarea class="inp" name="hidden_list" rows="5" style="font-family:monospace;"><?= h(implode("\n", (array)$hl)) ?></textarea>
+            <p class="help" style="margin-top:8px;">Ces indicatifs ne sont plus affichés dans « Transmissions en Direct » (page principale) ni dans les Statistiques. Ailleurs (stations actives, dernière personne ayant parlé, carte…) ils restent visibles.
+               Activation générale : réglage <code>HIDE_CALLSIGNS_ENABLE</code> (section 10f ci-dessus). Fichier : <code>include/<?= h(basename(HIDE_CALLSIGNS_FILE)) ?></code>.</p>
+            <p style="margin-top:12px;"><button class="btn-small" type="submit">Enregistrer la liste</button></p>
+        </form>
+    </div>
 
     <div class="card-panel" style="margin-bottom:18px;">
         <div class="panel-header"><h2><i class="fa-solid fa-key"></i> Mot de passe administrateur</h2></div>

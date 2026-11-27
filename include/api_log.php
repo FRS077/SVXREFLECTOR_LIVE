@@ -15,7 +15,7 @@ ini_set('display_errors', 0);
 session_start();
 require_once __DIR__ . '/../config.php';
 
-define('STATE_SCHEMA', 2);              // change si la structure de l'état évolue (relecture auto)
+define('STATE_SCHEMA', 3);              // 3 : PTT < STATS_MIN_PTT exclus des stats du jour ; change si la structure de l'état évolue (relecture auto)
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
@@ -134,6 +134,7 @@ function defaultState(): array {
         'talk_status'        => 'OFF',
         'last_talk_time'     => 0,
         'tx_count'           => 0,
+        'short_tx'           => 0,
         'total_talk_time'    => 0,
         'talk_starts'        => [], // callsign => timestamp du début de parole
         'connected_stations' => [], // callsign => ['since','since_ts','utc_iso']
@@ -193,6 +194,7 @@ function rollDayIfNeeded(array &$state, string $date): void {
     $state['hourly_talk']     = array_fill(0, 24, 0);
     $state['longest']         = ['callsign' => '', 'talk_time' => 0, 'datetime' => ''];
     $state['tx_count']        = 0;
+    $state['short_tx']        = 0;
     $state['total_talk_time'] = 0;
     $state['tg_counts']       = [];
 }
@@ -266,17 +268,21 @@ function applyEventToState(array &$state, array $ev): ?array {
         }
         $ev['talk_time'] = $dur;
 
-        // statistiques du jour
-        bump($state, $cs, 'tx');
-        bump($state, $cs, 'talk_time', $dur);
-        if ($dur > (int)$state['stats'][$cs]['max_talk']) {
-            $state['stats'][$cs]['max_talk'] = $dur;
-        }
-        $hour = max(0, min(23, (int)substr($ev['timestamp'], 0, 2)));
-        $state['hourly_tx'][$hour]   = (int)($state['hourly_tx'][$hour] ?? 0) + 1;
-        $state['hourly_talk'][$hour] = (int)($state['hourly_talk'][$hour] ?? 0) + $dur;
-        if ($dur > (int)($state['longest']['talk_time'] ?? 0)) {
-            $state['longest'] = ['callsign' => $cs, 'talk_time' => $dur, 'datetime' => $ev['datetime']];
+        // statistiques du jour (PTT plus courts que STATS_MIN_PTT : comptés à part dans short_tx, pas dans les stats)
+        if ($dur >= (int)STATS_MIN_PTT) {
+            bump($state, $cs, 'tx');
+            bump($state, $cs, 'talk_time', $dur);
+            if ($dur > (int)$state['stats'][$cs]['max_talk']) {
+                $state['stats'][$cs]['max_talk'] = $dur;
+            }
+            $hour = max(0, min(23, (int)substr($ev['timestamp'], 0, 2)));
+            $state['hourly_tx'][$hour]   = (int)($state['hourly_tx'][$hour] ?? 0) + 1;
+            $state['hourly_talk'][$hour] = (int)($state['hourly_talk'][$hour] ?? 0) + $dur;
+            if ($dur > (int)($state['longest']['talk_time'] ?? 0)) {
+                $state['longest'] = ['callsign' => $cs, 'talk_time' => $dur, 'datetime' => $ev['datetime']];
+            }
+        } else {
+            $state['short_tx'] = (int)($state['short_tx'] ?? 0) + 1;
         }
 
         $state['tx_count'] = (int)$state['tx_count'] + 1;
